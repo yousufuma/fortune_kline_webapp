@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>个人运势 K 线仪表盘｜2026–2028</title>
+  <style>
+    :root {
+      --bg: #0b0e14;
+      --panel: #121722;
+      --panel-2: #171e2c;
+      --text: #eef3ff;
+      --muted: #a7b0c2;
+      --line: #2a3448;
+      --up: #2ee59d;
+      --down: #ff5f76;
+      --wick: #cbd7f2;
+      --accent: #8fb3ff;
+      --gold: #f3c969;
+      --purple: #b596ff;
+      --cyan: #6be9ff;
+      --danger: #ff7b7b;
+      --shadow: 0 18px 60px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC",
+        "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(91, 129, 255, .18), transparent 28%),
+        radial-gradient(circle at 80% 0%, rgba(46, 229, 157, .12), transparent 30%),
+        radial-gradient(circle at 50% 110%, rgba(243, 201, 105, .08), transparent 35%),
+        var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    .app {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1.4fr .8fr;
+      gap: 18px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+
+    .hero, .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025));
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      backdrop-filter: blur(18px);
+    }
+
+    .hero {
+      padding: 26px 28px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero:before {
+      content: "";
+      position: absolute;
+      inset: -80px -40px auto auto;
+      width: 280px;
+      height: 280px;
+      background: radial-gradient(circle, rgba(143,179,255,.28), transparent 62%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(143,179,255,.12);
+      border: 1px solid rgba(143,179,255,.25);
+      color: var(--accent);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 4vw, 46px);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      max-width: 900px;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .meta-panel {
+      padding: 18px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      padding: 14px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.045);
+      border: 1px solid rgba(255,255,255,.07);
+    }
+
+    .metric .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .metric .value {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .metric .hint {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .chart-card {
+      padding: 18px;
+      min-height: 700px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .control-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    button, select, input {
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      padding: 9px 12px;
+      font: inherit;
+      outline: none;
+    }
+
+    button {
+      cursor: pointer;
+      transition: transform .15s ease, background .15s ease, border-color .15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      background: rgba(143,179,255,.15);
+      border-color: rgba(143,179,255,.45);
+    }
+
+    button.active {
+      background: rgba(143,179,255,.22);
+      border-color: rgba(143,179,255,.55);
+      color: #fff;
+    }
+
+    select {
+      min-width: 150px;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      height: 560px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.015));
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .tooltip {
+      position: absolute;
+      display: none;
+      z-index: 4;
+      pointer-events: none;
+      min-width: 220px;
+      padding: 12px 13px;
+      border-radius: 14px;
+      background: rgba(7,10,16,.92);
+      border: 1px solid rgba(255,255,255,.16);
+      box-shadow: var(--shadow);
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1.55;
+      transform: translate(12px, 12px);
+      backdrop-filter: blur(18px);
+    }
+
+    .tooltip .month {
+      font-weight: 800;
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: var(--accent);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .swatch { width: 13px; height: 13px; border-radius: 4px; }
+    .swatch.up { background: var(--up); }
+    .swatch.down { background: var(--down); }
+    .swatch.node { background: var(--gold); }
+
+    .side {
+      display: grid;
+      gap: 18px;
+    }
+
+    .card {
+      padding: 18px;
+    }
+
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      letter-spacing: -.02em;
+    }
+
+    .phase-list, .node-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .phase, .node {
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.045);
+      border: 1px solid rgba(255,255,255,.07);
+    }
+
+    .phase-title, .node-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-weight: 750;
+      margin-bottom: 6px;
+    }
+
+    .node {
+      cursor: pointer;
+      transition: transform .15s ease, border-color .15s ease, background .15s ease;
+    }
+
+    .node:hover, .node.active {
+      transform: translateY(-1px);
+      background: rgba(243,201,105,.12);
+      border-color: rgba(243,201,105,.42);
+    }
+
+    .tag {
+      font-size: 11px;
+      color: var(--bg);
+      background: var(--gold);
+      border-radius: 999px;
+      padding: 3px 8px;
+      white-space: nowrap;
+    }
+
+    .node p, .phase p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 13px;
+    }
+
+    .form {
+      display: grid;
+      gap: 10px;
+    }
+
+    .form input {
+      width: 100%;
+    }
+
+    .form textarea {
+      width: 100%;
+      min-height: 80px;
+      resize: vertical;
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font: inherit;
+      outline: none;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .score {
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.045);
+      border: 1px solid rgba(255,255,255,.07);
+    }
+
+    .score span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+
+    .score strong {
+      font-size: 20px;
+    }
+
+    footer {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 1100px) {
+      .topbar, .layout { grid-template-columns: 1fr; }
+      .chart-card { min-height: auto; }
+      .canvas-wrap { height: 520px; }
+    }
+
+    @media (max-width: 640px) {
+      .app { padding: 16px; }
+      .meta-panel { grid-template-columns: 1fr; }
+      .canvas-wrap { height: 460px; }
+      .controls { align-items: stretch; }
+      .control-group { width: 100%; }
+      button, select { flex: 1; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="topbar">
+      <div class="hero">
+        <div class="eyebrow">Symbolic Bazi Dashboard · 2026–2028</div>
+        <h1>个人运势 K 线仪表盘</h1>
+        <div class="subtitle">
+          这是一个可交互运行的象征性 K 线系统：把你未来两年的 PhD、教职/事业、音乐/创作、感情与总体状态转化为可观察的趋势指数。
+          它不是金融预测，也不是科学定量模型，而是一个用于复盘、规划和关系管理的视觉化工具。
+        </div>
+      </div>
+
+      <div class="meta-panel card">
+        <div class="metric">
+          <div class="label">当前命盘主轴</div>
+          <div class="value">壬水日主</div>
+          <div class="hint">伤官 · 正官 · 正印并行</div>
+        </div>
+        <div class="metric">
+          <div class="label">关键阶段</div>
+          <div class="value">2027</div>
+          <div class="hint">PhD / 平台 / 现实落地</div>
+        </div>
+        <div class="metric">
+          <div class="label">最高关键窗</div>
+          <div class="value">2027-09</div>
+          <div class="hint">录取 / 入学 / 平台转换</div>
+        </div>
+        <div class="metric">
+          <div class="label">系统原则</div>
+          <div class="value">记录 > 解释</div>
+          <div class="hint">先留数据，再做判断</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <div class="chart-card card">
+        <div class="controls">
+          <div class="control-group">
+            <select id="dimensionSelect">
+              <option value="overall">总体运势</option>
+              <option value="phd">PhD / 学术平台</option>
+              <option value="career">教职 / 事业</option>
+              <option value="creative">音乐 / 创作</option>
+              <option value="relationship">感情 / 关系</option>
+            </select>
+            <button data-range="all" class="active">全部</button>
+            <button data-range="2026">2026 H2</button>
+            <button data-range="2027">2027</button>
+            <button data-range="2028">2028 H1</button>
+          </div>
+          <div class="control-group">
+            <button id="toggleNodes" class="active">显示节点</button>
+            <button id="exportCsv">导出 CSV</button>
+            <button id="resetCustom">清空自定义节点</button>
+          </div>
+        </div>
+
+        <div class="canvas-wrap" id="canvasWrap">
+          <canvas id="chart"></canvas>
+          <div class="tooltip" id="tooltip"></div>
+        </div>
+
+        <div class="legend">
+          <div class="legend-item"><span class="swatch up"></span>收盘高于开盘：该月状态抬升</div>
+          <div class="legend-item"><span class="swatch down"></span>收盘低于开盘：该月状态回撤</div>
+          <div class="legend-item"><span class="swatch node"></span>重要节点 / 自定义节点</div>
+        </div>
+      </div>
+
+      <aside class="side">
+        <div class="card">
+          <h2>当前维度概览</h2>
+          <div class="score-grid">
+            <div class="score"><span>当前收盘</span><strong id="lastClose">--</strong></div>
+            <div class="score"><span>最高上影</span><strong id="maxHigh">--</strong></div>
+            <div class="score"><span>最低下影</span><strong id="minLow">--</strong></div>
+            <div class="score"><span>波动等级</span><strong id="volLevel">--</strong></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>阶段解释</h2>
+          <div class="phase-list" id="phaseList"></div>
+        </div>
+
+        <div class="card">
+          <h2>重要节点</h2>
+          <div class="node-list" id="nodeList"></div>
+        </div>
+
+        <div class="card">
+          <h2>新增自定义节点</h2>
+          <div class="form">
+            <input id="customMonth" placeholder="月份，例如 2027-04" />
+            <input id="customTitle" placeholder="节点标题，例如 面试窗口" />
+            <textarea id="customText" placeholder="备注：这个月可能发生什么？需要如何行动？"></textarea>
+            <button id="addCustom">添加到图表</button>
+            <div class="small">自定义节点保存在浏览器 localStorage。刷新页面不会消失；点击“清空自定义节点”会删除。</div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <footer>
+      Fortune Index = 象征性综合指数。K 线数值用于规划与复盘，不构成现实结果保证。建议每月根据真实事件更新一次。
+    </footer>
+  </main>
+
+  <script>
+    const months = [
+      "2026-07","2026-08","2026-09","2026-10","2026-11","2026-12",
+      "2027-01","2027-02","2027-03","2027-04","2027-05","2027-06",
+      "2027-07","2027-08","2027-09","2027-10","2027-11","2027-12",
+      "2028-01","2028-02","2028-03","2028-04","2028-05","2028-06"
+    ];
+
+    const dimensions = {
+      overall: {
+        label: "总体运势",
+        closes: [60,62,64,67,66,68,70,72,69,71,74,77,80,84,81,78,82,85,83,86,88,87,89,91],
+        note: "整体趋势是缓慢上行，但 2027 年出现明显现实压力与关键突破窗口。"
+      },
+      phd: {
+        label: "PhD / 学术平台",
+        closes: [58,61,65,68,72,74,76,75,73,76,80,84,86,88,91,86,84,87,88,90,91,90,92,93],
+        note: "学术平台线在 2026 年下半年逐步拉升，2027 年 6–9 月是最关键窗口。"
+      },
+      career: {
+        label: "教职 / 事业",
+        closes: [55,57,58,60,61,63,65,64,66,68,70,73,75,78,77,76,79,82,84,86,87,88,89,90],
+        note: "事业线更像后发：先依赖 PhD / 平台，再逐步转化为教职和稳定结构。"
+      },
+      creative: {
+        label: "音乐 / 创作",
+        closes: [70,72,73,75,74,76,73,70,69,71,74,76,79,83,80,78,82,84,86,88,90,89,92,94],
+        note: "创作线始终不低，但 2027 年初容易被申请和现实事务压缩；2028 年恢复明显。"
+      },
+      relationship: {
+        label: "感情 / 关系",
+        closes: [72,74,75,76,73,74,76,78,75,73,76,79,82,83,80,76,78,81,79,80,82,81,83,84],
+        note: "感情线有温度也有波动。2027 年现实问题会要求关系定性，而不是只靠情绪维持。"
+      }
+    };
+
+    const nodeBase = [
+      { month: "2026-09", title: "申请策略定稿", text: "明确主攻学校、导师、RP版本；同时建立感情与朋友关系边界。", type: "strategy" },
+      { month: "2026-11", title: "材料打磨高峰", text: "作品集、网站、CV、RP、套磁信并行；注意不要被朋友事务分散主线。", type: "work" },
+      { month: "2027-02", title: "等待与不确定期", text: "申请反馈未完全落地，情绪波动较大；适合补材料、继续套磁。", type: "pressure" },
+      { month: "2027-06", title: "现实压力窗口", text: "offer、funding、签证、城市、关系安排会同时压上来。", type: "pressure" },
+      { month: "2027-09", title: "PhD关键窗口", text: "录取 / 入学 / 平台转换能量最强；不要让短期关系情绪破坏长期结构。", type: "peak" },
+      { month: "2028-02", title: "新阶段适应", text: "制度与创作磨合。要把平台资源转化为作品、课程与工具系统。", type: "adjust" },
+      { month: "2028-05", title: "平台趋稳", text: "创作回升，适合启动更完整的音乐、游戏或互动作品项目。", type: "creative" }
+    ];
+
+    const phaseText = {
+      overall: [
+        ["2026 H2", "蓄势与整理：材料、网站、作品集、关系边界都需要重新排序。"],
+        ["2027", "关键转换年：PhD与现实结构显著推进，但波动也最大。"],
+        ["2028 H1", "平台趋稳：制度适应后，创作线和长期职业结构回升。"]
+      ],
+      phd: [
+        ["2026 H2", "申请系统搭建：RP、导师、网站和文章状态必须可被学术系统识别。"],
+        ["2027", "主战场：面试、funding、conditional、签证与入学节点集中。"],
+        ["2028 H1", "入轨与适应：研究方法、导师关系和平台资源开始稳定。"]
+      ],
+      career: [
+        ["2026 H2", "身份重组：从前高校教师转为 artist-researcher / PhD candidate。"],
+        ["2027", "现实落地：是否进入更高平台决定后续教职质量。"],
+        ["2028 H1", "结构强化：开始考虑实验室、课程、项目与未来教职路径。"]
+      ],
+      creative: [
+        ["2026 H2", "仍有灵感，但容易被申请任务挤压；适合做小型作品。"],
+        ["2027", "现实压力最大，但关键节点附近创作题材会变得更清晰。"],
+        ["2028 H1", "明显回升：音乐、游戏、实时系统开始重新成为主轴。"]
+      ],
+      relationship: [
+        ["2026 H2", "热度与投入增加，需要避免导师—学生式过度负责。"],
+        ["2027", "现实定性：城市、异地、读博、读研、经济边界必须谈清。"],
+        ["2028 H1", "关系趋于成熟或重新分流，模糊状态会减少。"]
+      ]
+    };
+
+    let currentDimension = "overall";
+    let currentRange = "all";
+    let showNodes = true;
+    let hoverIndex = null;
+    let selectedNodeMonth = null;
+
+    const canvas = document.getElementById("chart");
+    const wrap = document.getElementById("canvasWrap");
+    const tooltip = document.getElementById("tooltip");
+    const ctx = canvas.getContext("2d");
+
+    function getCustomNodes() {
+      try { return JSON.parse(localStorage.getItem("fortuneCustomNodes") || "[]"); }
+      catch { return []; }
+    }
+
+    function saveCustomNodes(nodes) {
+      localStorage.setItem("fortuneCustomNodes", JSON.stringify(nodes));
+    }
+
+    function getNodes() {
+      return [...nodeBase, ...getCustomNodes()];
+    }
+
+    function buildOHLC(closes) {
+      return closes.map((c, i) => {
+        const o = i === 0 ? c - 2 : closes[i - 1];
+        const vol = [4,4,5,5,4,5,5,5,6,5,6,6,6,7,6,6,5,6,5,6,5,5,6,6][i];
+        const lowVol = [4,3,4,4,5,4,4,5,6,5,4,4,5,5,6,7,5,4,5,4,4,5,4,4][i];
+        return {
+          month: months[i],
+          open: o,
+          close: c,
+          high: Math.max(o, c) + vol,
+          low: Math.min(o, c) - lowVol
+        };
+      });
+    }
+
+    function filteredData() {
+      const data = buildOHLC(dimensions[currentDimension].closes);
+      if (currentRange === "2026") return data.filter(d => d.month.startsWith("2026"));
+      if (currentRange === "2027") return data.filter(d => d.month.startsWith("2027"));
+      if (currentRange === "2028") return data.filter(d => d.month.startsWith("2028"));
+      return data;
+    }
+
+    function resizeCanvas() {
+      const rect = wrap.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = Math.floor(rect.width * ratio);
+      canvas.height = Math.floor(rect.height * ratio);
+      canvas.style.width = rect.width + "px";
+      canvas.style.height = rect.height + "px";
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      draw();
+    }
+
+    function draw() {
+      const rect = wrap.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      const data = filteredData();
+      const pad = { l: 56, r: 28, t: 38, b: 58 };
+      const chartW = w - pad.l - pad.r;
+      const chartH = h - pad.t - pad.b;
+
+      ctx.clearRect(0,0,w,h);
+
+      // Background grid
+      ctx.strokeStyle = "rgba(255,255,255,.08)";
+      ctx.lineWidth = 1;
+      ctx.font = "12px -apple-system, BlinkMacSystemFont, PingFang SC, Arial";
+      ctx.fillStyle = "rgba(238,243,255,.72)";
+
+      const min = Math.floor(Math.min(...data.map(d => d.low)) / 5) * 5;
+      const max = Math.ceil(Math.max(...data.map(d => d.high)) / 5) * 5;
+      const yMap = v => pad.t + (max - v) / (max - min) * chartH;
+      const xMap = i => pad.l + (i + 0.5) / data.length * chartW;
+
+      for (let v = min; v <= max; v += 5) {
+        const y = yMap(v);
+        ctx.beginPath();
+        ctx.moveTo(pad.l, y);
+        ctx.lineTo(w - pad.r, y);
+        ctx.stroke();
+        ctx.fillText(v, 16, y + 4);
+      }
+
+      // Title
+      ctx.fillStyle = "rgba(238,243,255,.95)";
+      ctx.font = "bold 16px -apple-system, BlinkMacSystemFont, PingFang SC, Arial";
+      ctx.fillText(dimensions[currentDimension].label + " K 线", pad.l, 24);
+
+      // Candles
+      const candleW = Math.min(20, chartW / data.length * 0.55);
+      data.forEach((d, i) => {
+        const x = xMap(i);
+        const up = d.close >= d.open;
+        const color = up ? getComputedStyle(document.documentElement).getPropertyValue("--up").trim()
+                         : getComputedStyle(document.documentElement).getPropertyValue("--down").trim();
+
+        ctx.strokeStyle = "rgba(203,215,242,.85)";
+        ctx.beginPath();
+        ctx.moveTo(x, yMap(d.high));
+        ctx.lineTo(x, yMap(d.low));
+        ctx.stroke();
+
+        const yO = yMap(d.open);
+        const yC = yMap(d.close);
+        const bodyTop = Math.min(yO, yC);
+        const bodyH = Math.max(Math.abs(yC - yO), 2);
+
+        ctx.fillStyle = color;
+        ctx.fillRect(x - candleW/2, bodyTop, candleW, bodyH);
+
+        if (hoverIndex === i) {
+          ctx.strokeStyle = "rgba(255,255,255,.9)";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x - candleW/2 - 3, bodyTop - 3, candleW + 6, bodyH + 6);
+          ctx.lineWidth = 1;
+        }
+
+        if (i % Math.ceil(data.length / 8) === 0 || data.length <= 12) {
+          ctx.save();
+          ctx.translate(x, h - 36);
+          ctx.rotate(-Math.PI / 4);
+          ctx.fillStyle = "rgba(238,243,255,.64)";
+          ctx.font = "11px -apple-system, BlinkMacSystemFont, PingFang SC, Arial";
+          ctx.fillText(d.month, 0, 0);
+          ctx.restore();
+        }
+      });
+
+      // Nodes
+      if (showNodes) {
+        const nodes = getNodes();
+        nodes.forEach(node => {
+          const i = data.findIndex(d => d.month === node.month);
+          if (i === -1) return;
+          const x = xMap(i);
+          const d = data[i];
+          const y = yMap(d.high) - 14;
+
+          ctx.strokeStyle = selectedNodeMonth === node.month ? "rgba(243,201,105,1)" : "rgba(243,201,105,.55)";
+          ctx.beginPath();
+          ctx.moveTo(x, pad.t);
+          ctx.lineTo(x, h - pad.b + 8);
+          ctx.stroke();
+
+          ctx.fillStyle = selectedNodeMonth === node.month ? "rgba(243,201,105,1)" : "rgba(243,201,105,.85)";
+          ctx.beginPath();
+          ctx.arc(x, y, selectedNodeMonth === node.month ? 6 : 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (data.length <= 12 || selectedNodeMonth === node.month) {
+            ctx.fillStyle = "rgba(243,201,105,.95)";
+            ctx.font = "bold 11px -apple-system, BlinkMacSystemFont, PingFang SC, Arial";
+            ctx.fillText(node.title.slice(0, 8), x - 32, Math.max(16, y - 10));
+          }
+        });
+      }
+
+      updateStats(data);
+    }
+
+    function updateStats(data) {
+      const last = data[data.length - 1];
+      const maxHigh = Math.max(...data.map(d => d.high));
+      const minLow = Math.min(...data.map(d => d.low));
+      const volatility = Math.round(data.reduce((sum,d)=>sum+(d.high-d.low),0)/data.length);
+      document.getElementById("lastClose").textContent = Math.round(last.close);
+      document.getElementById("maxHigh").textContent = Math.round(maxHigh);
+      document.getElementById("minLow").textContent = Math.round(minLow);
+      document.getElementById("volLevel").textContent = volatility >= 13 ? "高" : volatility >= 10 ? "中" : "低";
+    }
+
+    function renderSidebars() {
+      const phases = phaseText[currentDimension];
+      document.getElementById("phaseList").innerHTML = phases.map(([title, text]) => `
+        <div class="phase">
+          <div class="phase-title">${title}</div>
+          <p>${text}</p>
+        </div>
+      `).join("");
+
+      const nodes = getNodes();
+      document.getElementById("nodeList").innerHTML = nodes.map(node => `
+        <div class="node ${selectedNodeMonth === node.month ? "active" : ""}" data-month="${node.month}">
+          <div class="node-title">
+            <span>${node.month} · ${node.title}</span>
+            <span class="tag">${node.type || "custom"}</span>
+          </div>
+          <p>${node.text}</p>
+        </div>
+      `).join("");
+
+      document.querySelectorAll(".node").forEach(el => {
+        el.addEventListener("click", () => {
+          selectedNodeMonth = el.dataset.month;
+          renderSidebars();
+          draw();
+        });
+      });
+    }
+
+    function handleMouseMove(e) {
+      const rect = wrap.getBoundingClientRect();
+      const data = filteredData();
+      const pad = { l: 56, r: 28, t: 38, b: 58 };
+      const chartW = rect.width - pad.l - pad.r;
+      const mx = e.clientX - rect.left;
+      const idx = Math.floor((mx - pad.l) / chartW * data.length);
+      if (idx < 0 || idx >= data.length) {
+        hoverIndex = null;
+        tooltip.style.display = "none";
+        draw();
+        return;
+      }
+
+      hoverIndex = idx;
+      const d = data[idx];
+      const nodes = getNodes().filter(n => n.month === d.month);
+      tooltip.style.left = (e.clientX - rect.left) + "px";
+      tooltip.style.top = (e.clientY - rect.top) + "px";
+      tooltip.style.display = "block";
+      tooltip.innerHTML = `
+        <div class="month">${d.month} · ${dimensions[currentDimension].label}</div>
+        <div>Open：${Math.round(d.open)} / High：${Math.round(d.high)}</div>
+        <div>Low：${Math.round(d.low)} / Close：${Math.round(d.close)}</div>
+        <div style="margin-top:6px;color:#a7b0c2;">${dimensions[currentDimension].note}</div>
+        ${nodes.length ? `<div style="margin-top:8px;color:#f3c969;">节点：${nodes.map(n=>n.title).join("；")}</div>` : ""}
+      `;
+      draw();
+    }
+
+    function exportCsv() {
+      const rows = [["Month","Dimension","Open","High","Low","Close"]];
+      Object.entries(dimensions).forEach(([key, dim]) => {
+        buildOHLC(dim.closes).forEach(d => {
+          rows.push([d.month, dim.label, d.open, d.high, d.low, d.close]);
+        });
+      });
+      const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], {type: "text/csv;charset=utf-8;"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "fortune_kline_data.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    document.getElementById("dimensionSelect").addEventListener("change", e => {
+      currentDimension = e.target.value;
+      hoverIndex = null;
+      selectedNodeMonth = null;
+      renderSidebars();
+      draw();
+    });
+
+    document.querySelectorAll("button[data-range]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("button[data-range]").forEach(b=>b.classList.remove("active"));
+        btn.classList.add("active");
+        currentRange = btn.dataset.range;
+        hoverIndex = null;
+        draw();
+      });
+    });
+
+    document.getElementById("toggleNodes").addEventListener("click", e => {
+      showNodes = !showNodes;
+      e.target.classList.toggle("active", showNodes);
+      draw();
+    });
+
+    document.getElementById("exportCsv").addEventListener("click", exportCsv);
+
+    document.getElementById("addCustom").addEventListener("click", () => {
+      const month = document.getElementById("customMonth").value.trim();
+      const title = document.getElementById("customTitle").value.trim();
+      const text = document.getElementById("customText").value.trim();
+      if (!months.includes(month) || !title) {
+        alert("请输入有效月份，例如 2027-04，并填写标题。");
+        return;
+      }
+      const nodes = getCustomNodes();
+      nodes.push({ month, title, text: text || "自定义节点。", type: "custom" });
+      saveCustomNodes(nodes);
+      document.getElementById("customMonth").value = "";
+      document.getElementById("customTitle").value = "";
+      document.getElementById("customText").value = "";
+      renderSidebars();
+      draw();
+    });
+
+    document.getElementById("resetCustom").addEventListener("click", () => {
+      if (confirm("确定清空所有自定义节点？")) {
+        saveCustomNodes([]);
+        selectedNodeMonth = null;
+        renderSidebars();
+        draw();
+      }
+    });
+
+    wrap.addEventListener("mousemove", handleMouseMove);
+    wrap.addEventListener("mouseleave", () => {
+      hoverIndex = null;
+      tooltip.style.display = "none";
+      draw();
+    });
+
+    window.addEventListener("resize", resizeCanvas);
+
+    renderSidebars();
+    resizeCanvas();
+  </script>
+</body>
+</html>
